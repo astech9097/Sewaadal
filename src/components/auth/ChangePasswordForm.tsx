@@ -31,7 +31,7 @@ export default function ChangePasswordForm() {
     const { ok, error: err } = await fetchJson("/api/auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ oldPassword, newPassword }),
+      body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
     });
 
     setLoading(false);

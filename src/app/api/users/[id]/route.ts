@@ -51,6 +51,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         username: true,
         email: true,
         phone: true,
+        photoUrl: true,
         role: true,
         group: true,
         createdAt: true,
@@ -199,6 +200,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     if (name !== undefined) data.name = name.trim();
     if (phone !== undefined) data.phone = phone.trim();
+    if (body.photoUrl !== undefined) data.photoUrl = body.photoUrl;
     if (group !== undefined) data.group = group ? parseInt(String(group), 10) : null;
     
     if (role !== undefined) {
@@ -251,6 +253,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         username: true,
         email: true,
         phone: true,
+        photoUrl: true,
         role: true,
         ...sewaSelect,
       },
