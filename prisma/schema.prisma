@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         String       @id @default(cuid())
+  name       String
+  username   String?      @unique
+  email      String?      @unique
+  password   String
+  role       Role         @default(MEMBER)
+  phone      String?
+  photoUrl   String?
+  mustChangePassword Boolean @default(false)
+  group      Int?
+  createdAt  DateTime     @default(now())
+  attendance Attendance[]
+  approvedAttendance Attendance[] @relation("ApprovedAttendance")
+  passwordOtps PasswordOtp[]
+  broadcasts   Broadcast[]   @relation("CreatedBroadcasts")
+
+  firstSewaWeek  Int?
+  firstSewaDay   Int?
+  secondSewaWeek Int?
+  secondSewaDay  Int?
+  thirdSewaWeek  Int?
+  thirdSewaDay   Int?
+  extraSewa1Week Int?
+  extraSewa1Day  Int?
+  extraSewa2Week Int?
+  extraSewa2Day  Int?
+}
+
+model PasswordOtp {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([phone])
+}
+
+model Attendance {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  date           DateTime         @default(now())
+  status         AttendanceStatus
+  approvalStatus ApprovalStatus   @default(APPROVED)
+  photoUrl       String?
+  latitude       Float?
+  longitude      Float?
+  markedBy       String
+  approvedBy     String?
+  approvedByUser User?            @relation("ApprovedAttendance", fields: [approvedBy], references: [id])
+  approvedAt     DateTime?
+  rejectionNote  String?
+  areaName       String?
+  createdAt      DateTime         @default(now())
+
+  @@index([userId, date])
+  @@index([approvalStatus])
+  @@index([date])
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  mapUrl    String?
+  latitude  Float
+  longitude Float
+  radius    Float    @default(300)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Broadcast {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, SUCCESS
+  active    Boolean  @default(true)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  createdBy String
+  user      User     @relation("CreatedBroadcasts", fields: [createdBy], references: [id])
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  INCHARGE
+  MEMBER
+}
+
+enum AttendanceStatus {
+  P
+  PV
+  A
+}
+
+enum ApprovalStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
