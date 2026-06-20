@@ -275,7 +275,7 @@ export default function ReportsPage() {
         description=""
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         <StatCard label={t("members")} value={stats.totalMembers} accent="brand" />
         <StatCard label={t("present")} value={stats.present} accent="green" />
         <StatCard label={t("pv_vardi")} value={stats.pv} accent="amber" />
@@ -284,13 +284,13 @@ export default function ReportsPage() {
       </div>
 
       <Card>
-        <div className="flex items-center justify-between gap-4 mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-slate-900">
               Attendance records ({filtered.length})
             </h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1.5">
               {(["all", "approved", "pending"] as const).map((f) => (
                 <button
