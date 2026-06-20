@@ -13,6 +13,7 @@ model User {
   password           String
   role               Role          @default(MEMBER)
   phone              String?
+  photoUrl           String?
   createdAt          DateTime      @default(now())
   extraSewa1Day      Int?
   extraSewa1Week     Int?
