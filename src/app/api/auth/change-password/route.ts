@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        password: newPassword, // Store as plain text as requested
+        password: await bcrypt.hash(newPassword, 10), // Store as hashed password
         mustChangePassword: user.role === "MEMBER" ? false : user.mustChangePassword,
       },
     });
