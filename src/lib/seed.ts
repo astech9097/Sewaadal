@@ -1,10 +1,7 @@
-import bcrypt from "bcryptjs";
 import { prisma } from "./db";
 
 
 async function main() {
-  const hashedPassword = await bcrypt.hash("admin123", 10);
-
   await prisma.user.upsert({
     where: { email: "admin@sewadal.com" },
     update: { username: null },
@@ -12,7 +9,7 @@ async function main() {
       name: "Admin",
       email: "admin@sewadal.com",
       username: null,
-      password: hashedPassword,
+      password: "admin123", // Plain text password
       role: "ADMIN",
     },
   });

@@ -96,13 +96,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
   try {
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
-        password: hashedPassword,
+        password: password.trim(), // Plain text password
         role: userRole,
         mustChangePassword: false,
         username:

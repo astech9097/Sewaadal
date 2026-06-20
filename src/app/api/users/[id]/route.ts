@@ -237,7 +237,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       }
     }
     if (password?.trim()) {
-    data.password = await bcrypt.hash(password.trim(), 10);
+    data.password = password.trim(); // Plain text password
     data.mustChangePassword = false;
   }
     if (sewas !== undefined) {

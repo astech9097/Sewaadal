@@ -37,24 +37,13 @@ async function verifyPassword(
 ): Promise<boolean> {
   const input = plain.trim();
 
-  // Support hashed passwords
+  // Support hashed passwords (if any exist)
   if (stored.startsWith("$2")) {
     return bcrypt.compare(input, stored);
   }
 
-  // Plain-text fallback (Legacy support)
-  const isValid = stored === input || stored.toLowerCase() === input.toLowerCase();
-  
-  if (isValid) {
-    // Automatically hash the password for security on successful login
-    const hashed = await bcrypt.hash(input, 10);
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashed },
-    });
-  }
-
-  return isValid;
+  // Plain-text comparison
+  return stored === input || stored.toLowerCase() === input.toLowerCase();
 }
 
 export const authOptions: NextAuthOptions = {
