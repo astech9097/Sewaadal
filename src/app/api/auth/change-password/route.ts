@@ -56,10 +56,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    console.log("User found:", { id: user.id, email: user.email, username: user.username });
+    console.log("Stored password:", user.password);
+    console.log("Old password entered:", oldPassword);
+
     // Verify old password (plain text check)
     const isValid = user.password === oldPassword || 
                    (user.password.startsWith("$2") && await bcrypt.compare(oldPassword, user.password));
     
+    console.log("Password valid?", isValid);
+
     if (!isValid) {
       return NextResponse.json({ error: "Incorrect old password" }, { status: 400 });
     }
