@@ -78,7 +78,10 @@ export async function broadcastToAllMembers(prisma: any, title: string, message:
     const users = await prisma.user.findMany({
       where: { 
         role: "MEMBER",
-        phone: { not: null, not: "" }
+        NOT: [
+          { phone: null },
+          { phone: "" }
+        ]
       },
       select: { phone: true, name: true }
     });
@@ -89,7 +92,7 @@ export async function broadcastToAllMembers(prisma: any, title: string, message:
 
     // Send notifications in parallel
     const results = await Promise.allSettled(
-      users.map(user => sendPhoneNotification(user.phone, fullMessage))
+      users.map((user: { phone: string, name: string }) => sendPhoneNotification(user.phone, fullMessage))
     );
 
     const successCount = results.filter(

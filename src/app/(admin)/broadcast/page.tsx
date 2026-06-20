@@ -10,7 +10,6 @@ import Alert from "@/components/ui/Alert";
 import Spinner from "@/components/ui/Spinner";
 import { fetchJson } from "@/lib/fetchJson";
 import { useLanguage } from "@/context/LanguageContext";
-import Modal from "@/components/ui/Modal";
 import { useSimulatedProgress } from "@/hooks/useSimulatedProgress";
 
 type Broadcast = {

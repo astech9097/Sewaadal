@@ -9,16 +9,19 @@ const styles: Record<AlertVariant, string> = {
 export default function Alert({
   children,
   variant = "info",
+  className,
 }: {
   children: React.ReactNode;
   variant?: AlertVariant;
+  className?: string;
 }) {
   return (
     <div
       className={[
         "rounded-xl border px-4 py-3 text-sm font-medium",
         styles[variant],
-      ].join(" ")}
+        className,
+      ].filter(Boolean).join(" ")}
       role="alert"
     >
       {children}

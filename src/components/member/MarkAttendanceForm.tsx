@@ -88,9 +88,7 @@ export default function MarkAttendanceForm() {
       });
 
       if (!result.ok) {
-        const errorMsg = result.details
-          ? `${result.error}: ${result.details}`
-          : (result.error || "Failed to mark attendance");
+        const errorMsg = result.error || "Failed to mark attendance";
         throw new Error(errorMsg);
       }
 
