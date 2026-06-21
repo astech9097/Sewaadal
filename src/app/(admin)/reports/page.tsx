@@ -275,7 +275,7 @@ export default function ReportsPage() {
         description=""
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <StatCard label={t("members")} value={stats.totalMembers} accent="brand" />
         <StatCard label={t("present")} value={stats.present} accent="green" />
         <StatCard label={t("pv_vardi")} value={stats.pv} accent="amber" />

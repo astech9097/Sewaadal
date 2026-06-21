@@ -236,7 +236,7 @@ export default function GroupReportsPage() {
         description={isIncharge ? `Monitoring Group ${currentUser?.group}` : ""}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <StatCard label={t("members")} value={stats.totalMembers} accent="brand" />
         <StatCard label={t("present")} value={stats.present} accent="green" />
         <StatCard label={t("pv_vardi")} value={stats.pv} accent="amber" />
