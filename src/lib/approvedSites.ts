@@ -11,14 +11,14 @@ export const APPROVED_SITES_CONFIG = [
     mapUrl: "https://g.co/kgs/kPeVSo",
     latitude: 19.205802,
     longitude: 72.868881,
-    radius: 2000,
+    radius: 5000,
   },
   {
     name: "Kranti Nagar Satsung Bhawan",
     mapUrl: "https://g.co/kgs/xSFBrJ",
     latitude: 19.199938,
     longitude: 72.861613,
-    radius: 2000,
+    radius: 5000,
   },
 ] as const;
 
@@ -87,12 +87,19 @@ export async function resolveMemberLocation(
 ) {
   const sites = await getActiveApprovedLocations();
 
-  // Day-based filtering
-  // Tue (2), Thu (4), Sun (0) -> Kranti Nagar
-  // Sat (6) -> Samta Nagar
-  const day = new Date().getDay();
+  // Day-based filtering in Asia/Kolkata timezone (IST)
+  const now = new Date();
+  
+  // Create a date object adjusted to IST (UTC +5:30)
+  const istOffset = 5 * 60 + 30; // total minutes for IST
+  const utcOffset = now.getTimezoneOffset(); // in minutes (negative for UTC+xx)
+  const istDate = new Date(now.getTime() + (istOffset + utcOffset) * 60 * 1000);
+  
+  const day = istDate.getDay();
   let allowedNames: string[] = [];
 
+  // Tue (2), Thu (4), Sun (0) -> Kranti Nagar
+  // Sat (6) -> Samta Nagar
   if (day === 0 || day === 2 || day === 4) {
     allowedNames = ["Kranti Nagar Satsung Bhawan"];
   } else if (day === 6) {
