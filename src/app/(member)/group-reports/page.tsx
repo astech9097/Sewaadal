@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import PageHeader from "@/components/shared/PageHeader";
 import StatCard from "@/components/shared/StatCard";
@@ -58,7 +58,16 @@ export default function GroupReportsPage() {
   const progress = useSimulatedProgress(loading);
   const [filter, setFilter] = useState<"all" | "approved" | "pending">("all");
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
   
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
+  const filterModalRef = useRef<HTMLDivElement>(null);
+  
+  // New specific filters
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "P" | "PV">("ALL");
+  const [memberFilter, setMemberFilter] = useState<string>("ALL");
+  const [groupFilter, setGroupFilter] = useState<string>("ALL");
+
   // Filter state for inputs (pending)
   const [pendingFilters, setPendingFilters] = useState(() => {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
@@ -155,9 +164,40 @@ export default function GroupReportsPage() {
     }
   }, [isIncharge, currentUser?.group]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target as Node)) {
+        setShowDownloadMenu(false);
+      }
+      if (filterModalRef.current && !filterModalRef.current.contains(event.target as Node)) {
+        setShowFilterModal(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const handleApplyFilter = () => {
     setAppliedFilters(pendingFilters);
     loadData(pendingFilters);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this attendance record?")) return;
+    try {
+      const res = await fetch(`/api/attendance/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        loadData(appliedFilters);
+      } else {
+        alert("Failed to delete record");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete record");
+    }
   };
 
   const handleResetFilter = () => {
@@ -168,7 +208,7 @@ export default function GroupReportsPage() {
       end: now.toISOString().split("T")[0],
       status: "ALL" as const,
       member: "ALL",
-      group: isIncharge && currentUser?.group ? String(currentUser.group) : "ALL",
+      group: "ALL",
     };
     setPendingFilters(reset);
     setAppliedFilters(reset);
@@ -244,114 +284,169 @@ export default function GroupReportsPage() {
         <StatCard label={t("pending")} value={stats.pendingCount} accent="slate" />
       </div>
 
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t("from_date")}</label>
-            <input
-              type="date"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:bg-white transition"
-              value={pendingFilters.start}
-              onChange={(e) => setPendingFilters({ ...pendingFilters, start: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">{t("to_date")}</label>
-            <input
-              type="date"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:bg-white transition"
-              value={pendingFilters.end}
-              onChange={(e) => setPendingFilters({ ...pendingFilters, end: e.target.value })}
-            />
-          </div>
-          <div>
-            <Select
-              label={t("status")}
-              value={pendingFilters.status}
-              onChange={(e) => setPendingFilters({ ...pendingFilters, status: e.target.value as any })}
-              options={[
-                { value: "ALL", label: t("all_status") },
-                { value: "P", label: t("present") },
-                { value: "PV", label: t("pv_vardi") },
-              ]}
-              className="!py-2.5"
-            />
-          </div>
-          <div>
-            <MemberSearchSelect
-              label={t("member")}
-              value={pendingFilters.member}
-              onChange={(userId) => setPendingFilters({ ...pendingFilters, member: userId })}
-              members={users.filter(u => u.name).map(u => ({
-                id: u.id,
-                name: u.name,
-              }))}
-              allLabel={t("all_members")}
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-slate-100 flex flex-wrap items-end justify-between gap-6">
-          <div className="w-full lg:w-1/3">
-            <Select
-              label={t("group")}
-              value={pendingFilters.group}
-              onChange={(e) => setPendingFilters({ ...pendingFilters, group: e.target.value })}
-              options={isIncharge && currentUser?.group ? [
-                { value: String(currentUser.group), label: `${t("group")} ${currentUser.group}` }
-              ] : [
-                { value: "ALL", label: t("all_groups") },
-                ...[1, 2, 3, 4, 5, 6, 7, 8].map((g) => ({
-                  value: String(g),
-                  label: `${t("group")} ${g}`,
-                })),
-              ]}
-              disabled={isIncharge}
-              className="!py-2.5"
-            />
-          </div>
-          <div className="flex gap-3 w-full sm:w-auto">
-            <Button onClick={handleApplyFilter} disabled={loading} className="flex-1 sm:flex-none px-8 h-[45px] shadow-sm shadow-brand-200">
-              {loading ? t("loading") : t("apply_filter")}
-            </Button>
-            <Button variant="secondary" onClick={handleResetFilter} disabled={loading} className="flex-1 sm:flex-none px-8 h-[45px]">
-              {t("reset")}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
       <Card>
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-slate-900">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-slate-900">
               Attendance records ({filtered.length})
             </h2>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                className="flex items-center justify-center p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
-                title="Download report"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
-              {showDownloadMenu && (
-                <div className="absolute left-0 mt-2 w-32 rounded-xl bg-white border border-slate-200 shadow-xl z-10 py-1 overflow-hidden animate-in fade-in zoom-in duration-100">
-                  <button onClick={() => { downloadPDF(); setShowDownloadMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">PDF</button>
-                  <button onClick={() => { downloadExcel(); setShowDownloadMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition">Excel</button>
-                </div>
-              )}
-            </div>
           </div>
-          <div className="flex gap-2">
-            {(["all", "approved", "pending"] as const).map((f) => (
-              <button key={f} type="button" onClick={() => setFilter(f)} className={["rounded-lg px-4 py-1.5 text-sm font-semibold capitalize transition shadow-sm", filter === f ? "bg-brand-500 text-white shadow-brand-200" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"].join(" ")}>
-                {t(f)}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-1.5">
+              {(["all", "approved", "pending"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFilter(f)}
+                  className={[
+                    "rounded-lg px-3 py-1 text-xs font-semibold capitalize transition shadow-sm",
+                    filter === f
+                      ? "bg-brand-500 text-white shadow-brand-200"
+                      : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {t(f)}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="relative" ref={downloadMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                  className="flex items-center justify-center p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                  title="Download report"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+                {showDownloadMenu && (
+                  <div className="absolute right-0 mt-2 w-32 rounded-xl bg-white border border-slate-200 shadow-xl z-10 py-1 overflow-hidden animate-in fade-in zoom-in duration-100">
+                    <button
+                      onClick={() => {
+                        downloadPDF();
+                        setShowDownloadMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => {
+                        downloadExcel();
+                        setShowDownloadMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      Excel
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="relative" ref={filterModalRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowFilterModal(!showFilterModal)}
+                  className="flex items-center justify-center p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                  title="Filter reports"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                </button>
+                {showFilterModal && (
+                  <div className="absolute right-0 mt-2 w-80 rounded-xl bg-white border border-slate-200 shadow-xl z-10 p-4 overflow-hidden animate-in fade-in zoom-in duration-100" style={{ maxWidth: "calc(100vw - 32px)" }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">{t("from_date")}</label>
+                        <input
+                          type="date"
+                          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:bg-white transition"
+                          value={pendingFilters.start}
+                          onChange={(e) => setPendingFilters({ ...pendingFilters, start: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">{t("to_date")}</label>
+                        <input
+                          type="date"
+                          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:bg-white transition"
+                          value={pendingFilters.end}
+                          onChange={(e) => setPendingFilters({ ...pendingFilters, end: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <Select
+                        label={t("status")}
+                        value={pendingFilters.status}
+                        onChange={(e) => setPendingFilters({ ...pendingFilters, status: e.target.value as any })}
+                        options={[
+                          { value: "ALL", label: t("all_status") },
+                          { value: "P", label: t("present") },
+                          { value: "PV", label: t("pv_vardi") },
+                        ]}
+                        className="!py-2"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <MemberSearchSelect
+                        label={t("member")}
+                        value={pendingFilters.member}
+                        onChange={(userId) => setPendingFilters({ ...pendingFilters, member: userId })}
+                        members={users.filter(u => u.name).map(u => ({
+                          id: u.id,
+                          name: u.name,
+                        }))}
+                        allLabel={t("all_members")}
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <Select
+                        label={t("group")}
+                        value={pendingFilters.group}
+                        onChange={(e) => setPendingFilters({ ...pendingFilters, group: e.target.value })}
+                        options={isIncharge && currentUser?.group ? [
+                          { value: String(currentUser.group), label: `${t("group")} ${currentUser.group}` }
+                        ] : [
+                          { value: "ALL", label: t("all_groups") },
+                          ...[1, 2, 3, 4, 5, 6, 7, 8].map((g) => ({
+                            value: String(g),
+                            label: `${t("group")} ${g}`,
+                          })),
+                        ]}
+                        disabled={isIncharge}
+                        className="!py-2"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          handleApplyFilter();
+                          setShowFilterModal(false);
+                        }}
+                        disabled={loading}
+                        className="flex-1 px-4 h-[36px] shadow-sm shadow-brand-200"
+                      >
+                        {loading ? t("loading") : t("apply_filter")}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          handleResetFilter();
+                          setShowFilterModal(false);
+                        }}
+                        disabled={loading}
+                        className="flex-1 px-4 h-[36px]"
+                      >
+                        {t("reset")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -359,23 +454,27 @@ export default function GroupReportsPage() {
           <EmptyState title={t("no_records")} />
         ) : (
           <div className="overflow-x-auto -mx-6">
-            <table className="w-full text-left text-sm border-collapse min-w-[1000px]">
+            <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
               <thead>
                 <tr className="bg-slate-50 border-y border-slate-200">
-                  <th className="py-4 px-6 font-semibold text-slate-700">Name</th>
-                  <th className="py-4 px-4 font-semibold text-slate-700">{t("group")}</th>
-                  <th className="py-4 px-4 font-semibold text-slate-700">Area</th>
-                  <th className="py-4 px-4 font-semibold text-slate-700">Date</th>
-                  <th className="py-4 px-4 font-semibold text-center text-slate-700">{t("status")}</th>
-                  <th className="py-4 px-4 font-semibold text-center text-slate-700">Approval</th>
-                  <th className="py-4 px-4 font-semibold text-slate-700">Approved By</th>
-                  <th className="py-4 px-6 font-semibold text-right text-slate-700">Time</th>
+                  <th className="py-3 px-4 font-semibold text-slate-700">Name</th>
+                  <th className="py-3 px-3 font-semibold text-slate-700">{t("group")}</th>
+                  <th className="py-3 px-3 font-semibold text-slate-700">Area</th>
+                  <th className="py-3 px-3 font-semibold text-slate-700">Date</th>
+                  <th className="py-3 px-3 font-semibold text-center text-slate-700">{t("status")}</th>
+                  <th className="py-3 px-3 font-semibold text-center text-slate-700">Approval</th>
+                  <th className="py-3 px-3 font-semibold text-slate-700">Approved By</th>
+                  <th className="py-3 px-4 font-semibold text-right text-slate-700">Time</th>
+                  <th className="py-3 px-4 font-semibold text-center text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="py-4 px-6 font-medium text-slate-900">
+                  <tr
+                    key={row.id}
+                    className="hover:bg-slate-50/80 transition-colors group"
+                  >
+                    <td className="py-3 px-4 font-medium text-slate-900">
                       <div className="flex flex-col">
                         <span>{row.user?.name ?? "—"}</span>
                         {row.user?.sewas?.[0]?.slot && (
@@ -385,19 +484,42 @@ export default function GroupReportsPage() {
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-slate-600">
+                    <td className="py-3 px-3 text-slate-600">
                       {row.user?.group ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
                           {t("group")} {row.user.group}
                         </span>
                       ) : "—"}
                     </td>
-                    <td className="py-4 px-4 text-slate-600 max-w-[200px] truncate">{row.areaName || "—"}</td>
-                    <td className="py-4 px-4 text-slate-600 whitespace-nowrap">{formatDate(row.date)}</td>
-                    <td className="py-4 px-4 text-center"><Badge status={row.status} /></td>
-                    <td className="py-4 px-4 text-center"><ApprovalBadge status={row.approvalStatus} /></td>
-                    <td className="py-4 px-4 text-slate-600">{row.approvedByUser?.name || "—"}</td>
-                    <td className="py-4 px-6 text-right text-slate-500 tabular-nums font-medium">{formatTime(row.date)}</td>
+                    <td className="py-3 px-3 text-slate-600 max-w-[200px] truncate">
+                      {row.areaName || "—"}
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 whitespace-nowrap">
+                      {formatDate(row.date)}
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <Badge status={row.status} />
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <ApprovalBadge status={row.approvalStatus} />
+                    </td>
+                    <td className="py-3 px-3 text-slate-600">
+                      {row.approvedByUser?.name || "—"}
+                    </td>
+                    <td className="py-3 px-4 text-right text-slate-500 tabular-nums font-medium">
+                      {formatTime(row.date)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => handleDelete(row.id)}
+                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                        title="Delete record"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAuthContext } from "@/lib/session";
 
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await getAuthContext(req);
+  if (!auth || (auth.role !== "ADMIN" && auth.role !== "SUPERADMIN")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const record = await prisma.attendance.findUnique({ where: { id } });
+
+  if (!record) {
+    return NextResponse.json({ error: "Record not found" }, { status: 404 });
+  }
+
+  await prisma.attendance.delete({ where: { id } });
+  return NextResponse.json({ success: true, message: "Record deleted successfully" });
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

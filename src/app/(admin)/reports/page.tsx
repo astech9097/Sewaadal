@@ -191,6 +191,21 @@ export default function ReportsPage() {
     loadData(pendingFilters);
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this attendance record?")) return;
+    try {
+      const res = await fetch(`/api/attendance/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        loadData(appliedFilters);
+      } else {
+        alert("Failed to delete record");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete record");
+    }
+  };
+
   const handleResetFilter = () => {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -464,6 +479,7 @@ export default function ReportsPage() {
                   <th className="py-3 px-3 font-semibold text-center text-slate-700">Approval</th>
                   <th className="py-3 px-3 font-semibold text-slate-700">Approved By</th>
                   <th className="py-3 px-4 font-semibold text-right text-slate-700">Time</th>
+                  <th className="py-3 px-4 font-semibold text-center text-slate-700">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -506,6 +522,17 @@ export default function ReportsPage() {
                     </td>
                     <td className="py-3 px-4 text-right text-slate-500 tabular-nums font-medium">
                       {formatTime(row.date)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => handleDelete(row.id)}
+                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                        title="Delete record"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                 ))}
