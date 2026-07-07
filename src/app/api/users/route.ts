@@ -25,10 +25,10 @@ export async function GET(req: NextRequest) {
   } else if (auth.role === "INCHARGE") {
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { group: true }
+      select: { groups: true }
     });
     where = {
-      group: user?.group ?? -1,
+      groups: { hasSome: user?.groups ?? [] },
       role: { in: [Role.MEMBER, Role.INCHARGE] }
     };
   }
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       email: true,
       role: true,
       phone: true,
-      group: true,
+      groups: true,
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, username, email, password, phone, role, group } = await req.json();
+  const { name, username, email, password, phone, role, groups } = await req.json();
   
   // Validate and determine role
   let userRole: Role = Role.MEMBER;
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
             ? String(email).trim().toLowerCase()
             : null,
         phone: phone?.trim() || null,
-        group: group ? parseInt(String(group), 10) : null,
+        groups: Array.isArray(groups) ? groups.map(g => parseInt(String(g), 10)).filter(g => !isNaN(g)) : [],
       },
       select: {
         id: true,
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
         email: true,
         role: true,
         phone: true,
-        group: true,
+        groups: true,
       },
     });
 

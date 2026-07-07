@@ -51,7 +51,7 @@ type AnalyticsData = {
   memberGrowth: Array<{ month: string; count: number }>;
   attendanceTrend: Array<{ month: string; present: number; absent: number }>;
   groupWiseStats: Array<{ group: number; present: number; total: number }>;
-  topAttendees: Array<{ name: string; attendance: number; group: number }>;
+  topAttendees: Array<{ name: string; attendance: number; groups: number[] }>;
 };
 
 export default function AnalyticsDashboard() {
@@ -213,7 +213,11 @@ export default function AnalyticsDashboard() {
                     )}
                   </td>
                   <td className="py-3 px-4 font-medium text-slate-900">{attendee.name}</td>
-                  <td className="py-3 px-4 text-slate-600">Group {attendee.group}</td>
+                  <td className="py-3 px-4 text-slate-600">
+                    {attendee.groups.length > 0 
+                      ? attendee.groups.map(g => `Group ${g}`).join(", ") 
+                      : "—"}
+                  </td>
                   <td className="py-3 px-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       {attendee.attendance} days

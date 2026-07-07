@@ -50,7 +50,7 @@ export type SewaDayField = (typeof SEWA_SLOTS)[number]["dayField"];
 
 export type UserSewaRecord = Partial<
   Record<SewaWeekField | SewaDayField, number | null>
-> & { group?: number | null };
+> & { groups?: number[] };
 
 export type SewaSlotValue = {
   weekOfMonth: number | null;
@@ -71,15 +71,45 @@ export type ResolvedSewa = {
 };
 
 /** Default group-based duty mapping */
-export const GROUP_DUTY_MAPPING: Record<number, { week: number; day: number }> = {
-  1: { week: 1, day: 0 }, // 1st Sunday
-  2: { week: 2, day: 0 }, // 2nd Sunday
-  3: { week: 3, day: 0 }, // 3rd Sunday
-  4: { week: 4, day: 0 }, // 4th Sunday
-  5: { week: 1, day: 6 }, // 1st Saturday
-  6: { week: 2, day: 6 }, // 2nd Saturday
-  7: { week: 3, day: 6 }, // 3rd Saturday
-  8: { week: 4, day: 6 }, // 4th Saturday
+export const GROUP_DUTY_MAPPING: Record<number, Array<{ week: number; day: number }>> = {
+  1: [
+    { week: 1, day: 2 }, // 1st Tuesday
+    { week: 2, day: 2 }, // 2nd Tuesday
+    { week: 1, day: 0 }, // 1st Sunday
+  ],
+  2: [
+    { week: 3, day: 2 }, // 3rd Tuesday
+    { week: 4, day: 2 }, // 4th Tuesday
+    { week: 2, day: 0 }, // 2nd Sunday
+  ],
+  3: [
+    { week: 1, day: 4 }, // 1st Thursday
+    { week: 2, day: 4 }, // 2nd Thursday
+    { week: 3, day: 0 }, // 3rd Sunday
+  ],
+  4: [
+    { week: 3, day: 4 }, // 3rd Thursday
+    { week: 4, day: 4 }, // 4th Thursday
+    { week: 4, day: 0 }, // 4th Sunday
+  ],
+  5: [
+    { week: 1, day: 6 }, // 1st Saturday
+    { week: 2, day: 6 }, // 2nd Saturday
+    { week: 4, day: 0 }, // 4th Sunday
+  ],
+  6: [
+    { week: 3, day: 6 }, // 3rd Saturday
+    { week: 4, day: 6 }, // 4th Saturday
+    { week: 1, day: 0 }, // 1st Sunday
+  ],
+  7: [
+    { week: 1, day: 0 }, // 1st Sunday
+    { week: 2, day: 0 }, // 2nd Sunday
+  ],
+  8: [
+    { week: 3, day: 0 }, // 3rd Sunday
+    { week: 4, day: 0 }, // 4th Sunday
+  ],
 };
 
 function ordinal(n: number): string {
@@ -173,27 +203,35 @@ export function resolveSewasForMonth(
     user[slot.weekField] !== null && user[slot.dayField] !== null
   );
 
-  // If no explicit sewa, use group-based duty
-  if (!hasExplicitSewa && user.group && GROUP_DUTY_MAPPING[user.group]) {
-    const { week, day } = GROUP_DUTY_MAPPING[user.group];
-    const date = getNthWeekdayInMonth(year, monthIndex, day, week);
-    if (date) {
-      resolved.push({
-        slotKey: "firstSewa",
-        slotLabel: `Group ${user.group} Duty`,
-        weekOfMonth: week,
-        dayOfWeek: day,
-        patternLabel: formatDutyLabel(week, day),
-        date: date.toISOString(),
-        dateLabel: date.toLocaleDateString("en-IN", {
-          weekday: "long",
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }),
-        dayName: DAY_NAMES[day] ?? "",
-      });
-      return resolved;
+  // If no explicit sewa, use group-based duty (use all groups)
+  if (!hasExplicitSewa && user.groups && user.groups.length > 0) {
+    for (const group of user.groups) {
+      const duties = GROUP_DUTY_MAPPING[group];
+      if (duties) {
+        duties.forEach(({ week, day }, index) => {
+          const date = getNthWeekdayInMonth(year, monthIndex, day, week);
+          if (date) {
+            resolved.push({
+              slotKey: ["firstSewa", "secondSewa", "thirdSewa", "extraSewa1", "extraSewa2"][index % 5],
+              slotLabel: `Group ${group} Duty`,
+              weekOfMonth: week,
+              dayOfWeek: day,
+              patternLabel: formatDutyLabel(week, day),
+              date: date.toISOString(),
+              dateLabel: date.toLocaleDateString("en-IN", {
+                weekday: "long",
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              }),
+              dayName: DAY_NAMES[day] ?? "",
+            });
+          }
+        });
+      }
+    }
+    if (resolved.length > 0) {
+      return resolved.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }
   }
 
@@ -236,10 +274,12 @@ export function resolveSewasForMonth(
 }
 
 export function hasAnySewaAssigned(user: UserSewaRecord): boolean {
-  if (user.group && GROUP_DUTY_MAPPING[user.group]) return true;
+  if (user.groups && user.groups.length > 0) {
+    return user.groups.some(g => GROUP_DUTY_MAPPING[g] && GROUP_DUTY_MAPPING[g].length > 0);
+  }
 
   return SEWA_SLOTS.some((slot) => {
     const parsed = parseSewaSlot(user[slot.weekField], user[slot.dayField]);
-    return parsed.weekOfMonth != null && parsed.dayOfWeek != null;
+    return parsed.weekOfMonth != null && parsed.dayOfMonth != null;
   });
 }

@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
         role: true,
         phone: true,
         mustChangePassword: true,
+        groups: true,
       },
     });
 

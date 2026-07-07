@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       where: { id: userId },
       select: {
         ...sewaSelect,
-        group: true,
+        groups: true,
       },
     });
 

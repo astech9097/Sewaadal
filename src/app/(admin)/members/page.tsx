@@ -33,7 +33,7 @@ const emptyForm = {
   phone: "",
   password: "",
   role: "MEMBER",
-  group: "",
+  groups: [] as number[],
 };
 
 export default function MembersPage() {
@@ -95,6 +95,16 @@ export default function MembersPage() {
     setForm({ ...form, [name]: value });
   };
 
+  const handleGroupToggle = (groupNum: number) => {
+    setForm(prev => {
+      if (prev.groups.includes(groupNum)) {
+        return { ...prev, groups: prev.groups.filter(g => g !== groupNum) };
+      } else {
+        return { ...prev, groups: [...prev.groups, groupNum] };
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
@@ -107,7 +117,7 @@ export default function MembersPage() {
           phone: form.phone,
           password: form.password,
           role: form.role,
-          group: form.group ? parseInt(form.group, 10) : undefined,
+          groups: form.groups,
         }
       : {
           name: form.name,
@@ -204,20 +214,29 @@ export default function MembersPage() {
                   placeholder=""
                   required
                 />
-                <Select
-                  name="group"
-                  label="Group (1-8)"
-                  value={form.group}
-                  onChange={handleChange}
-                  required={form.role === "INCHARGE"}
-                  options={[
-                    { value: "", label: "— Select Group —" },
-                    ...[1, 2, 3, 4, 5, 6, 7, 8].map((g) => ({
-                      value: String(g),
-                      label: `Group ${g}`,
-                    })),
-                  ]}
-                />
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Groups</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                      <label
+                        key={num}
+                        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                          form.groups.includes(num)
+                            ? "border-brand-500 bg-brand-50"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.groups.includes(num)}
+                          onChange={() => handleGroupToggle(num)}
+                          className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        />
+                        <span className="text-sm font-medium text-slate-700">Group {num}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </>
             ) : (
               <Input

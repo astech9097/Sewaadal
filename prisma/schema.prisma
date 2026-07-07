@@ -27,7 +27,7 @@ model User {
   thirdSewaWeek      Int?
   username           String?       @unique
   mustChangePassword Boolean       @default(false)
-  group              Int?
+  groups             Int[]         @default([])
   approvedAttendance Attendance[]  @relation("ApprovedAttendance")
   attendance         Attendance[]
   broadcasts         Broadcast[]   @relation("CreatedBroadcasts")

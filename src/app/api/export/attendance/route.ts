@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             name: true,
-            group: true,
+            groups: true,
             phone: true,
           },
         },
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     const exportData = attendanceData.map((record) => ({
       Date: format(record.date, "dd/MM/yyyy"),
       "Member Name": record.user.name,
-      Group: record.user.group || "N/A",
+      Groups: record.user.groups.length > 0 ? record.user.groups.join(", ") : "N/A",
       Phone: record.user.phone || "N/A",
       Status: record.status,
       "Approval Status": record.approvalStatus,

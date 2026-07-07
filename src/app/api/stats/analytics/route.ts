@@ -110,11 +110,11 @@ export async function GET(req: NextRequest) {
 
     // Get group-wise stats
     const groupWiseStats = [];
-    for (let group = 1; group <= 5; group++) {
+    for (let group = 1; group <= 8; group++) {
       const groupMembers = await prisma.user.count({
         where: {
           role: "MEMBER",
-          group,
+          groups: { has: group },
         },
       });
 
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
       const groupPresent = await prisma.attendance.count({
         where: {
           user: {
-            group,
+            groups: { has: group },
           },
           date: {
             gte: currentMonthStart,
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         name: true,
-        group: true,
+        groups: true,
         attendance: {
           where: {
             date: {
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
     const topAttendees = topAttendeesData
       .map((user) => ({
         name: user.name,
-        group: user.group || 0,
+        groups: user.groups,
         attendance: user.attendance.length,
       }))
       .sort((a, b) => b.attendance - a.attendance)

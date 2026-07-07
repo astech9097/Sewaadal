@@ -109,6 +109,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           phone: user.phone,
           mustChangePassword: user.mustChangePassword,
+          groups: user.groups,
         };
       },
     }),
@@ -125,6 +126,7 @@ export const authOptions: NextAuthOptions = {
         token.mustChangePassword = Boolean(
           (user as { mustChangePassword?: boolean }).mustChangePassword
         );
+        token.groups = (user as { groups?: number[] }).groups;
       }
 
       if (trigger === "update" && session) {
@@ -149,6 +151,9 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
         (session.user as { mustChangePassword?: boolean }).mustChangePassword =
           Boolean(token.mustChangePassword);
+        (session.user as { groups?: number[] }).groups = token.groups as
+          | number[]
+          | undefined;
       }
       return session;
     },

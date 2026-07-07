@@ -26,13 +26,13 @@ export async function GET(req: NextRequest) {
   const { role, userId: sessionUserId } = auth;
 
   // Get current user's group for INCHARGE restriction
-  let userGroup: number | null = null;
+  let userGroups: number[] = [];
   if (role === "INCHARGE") {
     const user = await prisma.user.findUnique({
       where: { id: sessionUserId },
-      select: { group: true }
+      select: { groups: true }
     });
-    userGroup = user?.group ?? null;
+    userGroups = user?.groups ?? [];
   }
 
   if (pendingOnly && role !== "ADMIN" && role !== "SUPERADMIN" && role !== "INCHARGE") {
@@ -63,12 +63,12 @@ export async function GET(req: NextRequest) {
       ? {
           ...(userId ? { userId } : {}),
           ...(status ? { status: status as AttendanceStatus } : {}),
-          ...(group ? { user: { group: parseInt(group, 10) } } : {}),
+          ...(group ? { user: { groups: { has: parseInt(group, 10) } } } : {}),
           ...dateFilter,
         }
       : role === "INCHARGE"
       ? {
-          user: { group: userGroup ?? -1 }, // Only their group
+          user: { groups: { hasSome: userGroups } }, // Only their group
           ...(userId ? { userId } : {}),
           ...(status ? { status: status as AttendanceStatus } : {}),
           ...dateFilter,
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
           name: true,
           username: true,
           email: true,
-          group: true,
+          groups: true,
           firstSewaWeek: true,
           firstSewaDay: true,
           secondSewaWeek: true,
@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
         id: att.userId, 
         name: "Unknown Member", 
         username: att.userId, 
-        group: null,
+        groups: [],
         sewas: [] 
       },
     };

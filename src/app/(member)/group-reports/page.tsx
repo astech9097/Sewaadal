@@ -28,7 +28,7 @@ type Record = {
   user?: { 
     id: string; 
     name: string; 
-    group?: number | null;
+    groups?: number[];
     sewas?: { slot: string }[];
   };
   approvedByUser?: { name: string };
@@ -41,7 +41,7 @@ type UserOption = {
 
 export default function GroupReportsPage() {
   const { data: session } = useSession();
-  const currentUser = session?.user as { role?: string; group?: number } | undefined;
+  const currentUser = session?.user as { role?: string; groups?: number[] } | undefined;
   const isIncharge = currentUser?.role === "INCHARGE";
 
   const { t } = useLanguage();
@@ -153,8 +153,8 @@ export default function GroupReportsPage() {
   };
 
   useEffect(() => {
-    if (isIncharge && currentUser?.group) {
-      const g = String(currentUser.group);
+    if (isIncharge && currentUser?.groups && currentUser.groups.length > 0) {
+      const g = String(currentUser.groups[0]);
       const newFilters = { ...pendingFilters, group: g };
       setPendingFilters(newFilters);
       setAppliedFilters(newFilters);
@@ -162,7 +162,7 @@ export default function GroupReportsPage() {
     } else {
       loadData();
     }
-  }, [isIncharge, currentUser?.group]);
+  }, [isIncharge, currentUser?.groups]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -228,7 +228,7 @@ export default function GroupReportsPage() {
     const { utils, writeFile } = await import("xlsx");
     const data = filtered.map((r) => ({
       Name: r.user?.name || "—",
-      Group: r.user?.group ? `${t("group")} ${r.user.group}` : "—",
+      Groups: r.user?.groups && r.user.groups.length > 0 ? r.user.groups.map(g => `${t("group")} ${g}`).join(", ") : "—",
       Area: r.areaName || "—",
       Date: formatDate(r.date),
       Status: r.status,
@@ -251,7 +251,7 @@ export default function GroupReportsPage() {
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
     const tableData = filtered.map((r) => [
       r.user?.name || "—",
-      r.user?.group ? `G${r.user.group}` : "—",
+      r.user?.groups && r.user.groups.length > 0 ? r.user.groups.map(g => `G${g}`).join(", ") : "—",
       r.areaName || "—",
       formatDate(r.date),
       r.status,
@@ -260,7 +260,7 @@ export default function GroupReportsPage() {
       formatTime(r.date),
     ]);
     autoTable(doc, {
-      head: [["Name", t("group"), "Area", "Date", t("status"), "Approval", "Approved By", "Time"]],
+      head: [["Name", t("groups"), "Area", "Date", t("status"), "Approval", "Approved By", "Time"]],
       body: tableData,
       startY: 30,
     });
@@ -273,7 +273,7 @@ export default function GroupReportsPage() {
     <div>
       <PageHeader
         title="Group Reports"
-        description={isIncharge ? `Monitoring Group ${currentUser?.group}` : ""}
+        description={isIncharge && currentUser?.groups && currentUser.groups.length > 0 ? `Monitoring Group ${currentUser.groups[0]}` : ""}
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
@@ -407,8 +407,8 @@ export default function GroupReportsPage() {
                         label={t("group")}
                         value={pendingFilters.group}
                         onChange={(e) => setPendingFilters({ ...pendingFilters, group: e.target.value })}
-                        options={isIncharge && currentUser?.group ? [
-                          { value: String(currentUser.group), label: `${t("group")} ${currentUser.group}` }
+                        options={isIncharge && currentUser?.groups && currentUser.groups.length > 0 ? [
+                          { value: String(currentUser.groups[0]), label: `${t("group")} ${currentUser.groups[0]}` }
                         ] : [
                           { value: "ALL", label: t("all_groups") },
                           ...[1, 2, 3, 4, 5, 6, 7, 8].map((g) => ({
@@ -485,10 +485,14 @@ export default function GroupReportsPage() {
                       </div>
                     </td>
                     <td className="py-3 px-3 text-slate-600">
-                      {row.user?.group ? (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                          {t("group")} {row.user.group}
-                        </span>
+                      {row.user?.groups && row.user.groups.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {row.user.groups.map(g => (
+                            <span key={g} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                              {t("group")} {g}
+                            </span>
+                          ))}
+                        </div>
                       ) : "—"}
                     </td>
                     <td className="py-3 px-3 text-slate-600 max-w-[200px] truncate">

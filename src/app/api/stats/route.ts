@@ -26,12 +26,12 @@ export async function GET(req: NextRequest) {
       // For INCHARGE, only count their group members
       let groupFilter: any = {};
       if (role === "INCHARGE") {
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { group: true }
-        });
-        groupFilter = { group: user?.group ?? -1 };
-      }
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { groups: true }
+      });
+      groupFilter = { groups: { hasSome: user?.groups ?? [] } };
+    }
 
       const [totalMembers, todayRecords, recentAttendance, pendingCount] =
         await Promise.all([

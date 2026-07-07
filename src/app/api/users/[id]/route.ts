@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         phone: true,
         photoUrl: true,
         role: true,
-        group: true,
+        groups: true,
         createdAt: true,
         ...sewaSelect,
       },
@@ -97,7 +97,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
 
     const body = await req.json();
-    const { name, username, email, phone, password, role, sewas, group } = body as {
+    const { name, username, email, phone, password, role, sewas, groups } = body as {
       name?: string;
       username?: string;
       email?: string;
@@ -105,7 +105,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       password?: string;
       role?: ManagedRole;
       sewas?: SewaFormState;
-      group?: number | null;
+      groups?: number[];
     };
 
     const existing = await prisma.user.findUnique({ where: { id } });
@@ -201,7 +201,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (name !== undefined) data.name = name.trim();
     if (phone !== undefined) data.phone = phone.trim();
     if (body.photoUrl !== undefined) data.photoUrl = body.photoUrl;
-    if (group !== undefined) data.group = group ? parseInt(String(group), 10) : null;
+    if (groups !== undefined) data.groups = Array.isArray(groups) ? groups.map(g => parseInt(String(g), 10)).filter(g => !isNaN(g)) : [];
     
     if (role !== undefined) {
       // Use the Role enum from Prisma to ensure type safety and correct runtime value
