@@ -39,10 +39,12 @@ export default function LoginPage() {
     const user = session?.user as { role?: string; mustChangePassword?: boolean };
     const role = user?.role;
 
-    if (role === "ADMIN" || role === "SUPERADMIN") {
+    if (user?.mustChangePassword) {
+      router.push("/change-password");
+    } else if (role === "ADMIN" || role === "SUPERADMIN") {
       router.push("/admin-dashboard");
     } else {
-      router.push("/mark-attendance");
+      router.push("/member-dashboard");
     }
   };
 
