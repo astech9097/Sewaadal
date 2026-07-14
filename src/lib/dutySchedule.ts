@@ -212,7 +212,7 @@ export function resolveSewasForMonth(
           const date = getNthWeekdayInMonth(year, monthIndex, day, week);
           if (date) {
             resolved.push({
-              slotKey: SEWA_SLOTS[index % 5].key,
+              slotKey: ["firstSewa", "secondSewa", "thirdSewa", "extraSewa1", "extraSewa2"][index % 5],
               slotLabel: `Group ${group} Duty`,
               weekOfMonth: week,
               dayOfWeek: day,
@@ -280,6 +280,6 @@ export function hasAnySewaAssigned(user: UserSewaRecord): boolean {
 
   return SEWA_SLOTS.some((slot) => {
     const parsed = parseSewaSlot(user[slot.weekField], user[slot.dayField]);
-    return parsed.weekOfMonth != null && parsed.dayOfWeek != null;
+    return parsed.weekOfMonth != null && parsed.dayOfMonth != null;
   });
 }
